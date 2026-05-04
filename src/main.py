@@ -8,8 +8,8 @@ import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 # --- CONFIGURACIÓN DE CURADURÍA ---
-BLACKLIST = ["microsoft", "meta", "palantir", "azure", "facebook", "llama"] # Estos se borran totalmente
-LOCAL_PROVIDERS = ["mistral", "deepseek", "google", "meta", "alibaba", "01.ai", "mistral ai"] # Modelos que suelen tener versiones Open Weights
+BLACKLIST = ["microsoft", "meta", "palantir", "azure", "facebook", "llama"]
+DIMENSIONES = ["coding", "reasoning", "multimodal", "agency"]
 
 def filtrar_blacklist(ia):
     proveedor = str(ia.get("proveedor", "")).lower()
@@ -20,65 +20,67 @@ def filtrar_blacklist(ia):
     return True
 
 def es_modelo_local(ia):
-    # Lógica para determinar si el modelo es "Soberano/Local"
-    # En un entorno real, esto se cruza con una base de datos de HuggingFace
-    proveedor = str(ia.get("proveedor", "")).lower()
     modelo = str(ia.get("modelo", "")).lower()
-    
-    # Definimos palabras clave que indican que el modelo es abierto/local
+    proveedor = str(ia.get("proveedor", "")).lower()
     keywords_local = ["llama", "mistral", "deepseek", "qwen", "gemma", "phi", "mixtral"]
+    return any(key in modelo for key in keywords_local) or "deepseek" in proveedor or "mistral" in proveedor
+
+def obtener_datos_maestros():
+    """
+    Simula la extracción de múltiples dimensiones. 
+    En la versión final, aquí conectamos cada dimensión a su respectivo benchmark.
+    """
+    print("🌐 Extrayendo datos multidimensionales...")
+    # Dataset maestro simulado basado en tendencias reales de LMSYS/LiveCodeBench
+    # Formato: { "modelo": ..., "proveedor": ..., "scores": {"coding": X, "reasoning": Y, ...} }
+    datos_maestros = [
+        {"modelo": "Claude 3.5 Sonnet", "proveedor": "Anthropic", "scores": {"coding": 1285, "reasoning": 1270, "multimodal": 1260, "agency": 1240}},
+        {"modelo": "GPT-4o", "proveedor": "OpenAI", "scores": {"coding": 1270, "reasoning": 1280, "multimodal": 1290, "agency": 1260}},
+        {"modelo": "DeepSeek Coder V2", "proveedor": "DeepSeek", "scores": {"coding": 1255, "reasoning": 1210, "multimodal": 1100, "agency": 1150}},
+        {"modelo": "Llama 3 70B", "proveedor": "Meta", "scores": {"coding": 1210, "reasoning": 1240, "multimodal": 1000, "agency": 1100}},
+        {"modelo": "Mistral Large 2", "proveedor": "Mistral", "scores": {"coding": 1220, "reasoning": 1230, "multimodal": 1050, "agency": 1120}},
+        {"modelo": "Gemma 2 27B", "proveedor": "Google", "scores": {"coding": 1180, "reasoning": 1200, "multimodal": 1150, "agency": 1050}},
+    ]
+    return datos_// la data real se procesaría aquí la misma forma que antes
+    return datos_maestros
+
+def generar_hub_tecnico():
+    datos_maestros = obtener_datos_maestros()
     
-    if any(key in modelo for key in keywords_local) or any(prov in proveedor for prov in LOCAL_PROVIDERS):
-        return True
-    return False
-
-def obtener_datos_reales():
-    print("🌐 Conectando con fuente de datos reales...")
-    url_datos = "https://raw.githubusercontent.com/lucidrains/chat-arena-data/main/leaderboard.csv" 
-    try:
-        df = pd.read_csv(url_datos)
-        datos_procesados = []
-        for index, row in df.iterrows():
-            datos_procesados.append({
-                "modelo": row.get("model", "Desconocido"),
-                "proveedor": row.get("organization", "Desconocido"),
-                "score_coding": row.get("elo", 0)
-            })
-        return datos_procesados
-    except Exception as e:
-        print(f"❌ Error de conexión: {e}")
-        return None
-
-def generar_rankings_duales():
-    datos_brutos = obtener_datos_reales()
-    
-    if datos_brutos is None:
-        print("⚠️ Error al obtener datos. Usando respaldo...")
-        # Datos de respaldo simplificados para el ejemplo
-        datos_brutos = [
-            {"modelo": "Claude 3.5 Sonnet", "proveedor": "Anthropic", "score_coding": 1285},
-            {"modelo": "GPT-4o", "proveedor": "OpenAI", "score_coding": 1270},
-            {"modelo": "DeepSeek Coder V2", "proveedor": "DeepSeek", "score_coding": 1255},
-            {"modelo": "Llama 3 70B", "proveedor": "Meta", "score_coding": 1210},
-            {"modelo": "Mistral Large 2", "proveedor": "Mistral", "score_coding": 1220},
-        ]
-
-    # 1. RANKING GLOBAL (Todos menos la Blacklist)
-    global_list = [ia for ia in datos_brutos if filtrar_blacklist(ia)]
-    for ia in global_list: ia["estado"] = "Aprobado"
-
-    # 2. RANKING LOCAL (Solo los que son Open Weights y NO están en Blacklist)
-    local_list = [ia for ia in datos_brutos if filtrar_blacklist(ia) and es_modelo_local(ia)]
-    for ia in local_list: ia["estado"] = "Soberano"
-
-    # GUARDAR ARCHIVOS EN /data
-    with open(os.path.join("..", "data", "ranking_global.json"), "w", encoding="utf-8") as f:
-        json.dump(global_list, f, indent=4, ensure_ascii=False)
-    
-    with open(os.path.join("..", "data", "ranking_local.json"), "w", encoding="utf-8") as f:
-        json.dump(local_list, f, indent=4, ensure_ascii=False)
-    
-    print(f"🚀 EXITO: Rankings generados. Global: {len(global_list)} | Local: {len(local_list)}")
+    for dim in DIMENSIONES:
+        global_list = []
+        local_list = []
+        
+        for ia in datos_maestros:
+            # 1. Aplicar Blacklist
+            if not filtrar_blacklist(ia):
+                continue
+            
+            # Creamos el objeto para la tabla
+            entrada = {
+                "modelo": ia["modelo"],
+                "proveedor": ia["proveedor"],
+                "score": ia["scores"][dim],
+                "estado": "Auditado" if not es_modelo_local(ia) else "Soberano"
+            }
+            
+            # 2. Clasificar en Global o Local
+            global_list.append(entrada)
+            if es_modelo_local(ia):
+                local_list.append(entrada)
+        
+        # Ordenar por score descendente
+        global_list.sort(key=lambda x: x["score"], reverse=True)
+        local_list.sort(key=lambda x: x["score"], reverse=True)
+        
+        # GUARDAR ARCHIVOS DINÁMICOS
+        with open(os.path.join("..", "data", f"global_{dim}.json"), "w", encoding="utf-8") as f:
+            json.dump(global_list, f, indent=4, ensure_ascii=False)
+        
+        with open(os.path.join("..", "data", f"local_{dim}.json"), "w", encoding="utf-8") as f:
+            json.dump(local_list, f, indent=4, ensure_ascii=False)
+            
+    print(f"🚀 HUB ACTUALIZADO: {len(DIMENSIONES)} dimensiones procesadas (Global y Local).")
 
 if __name__ == "__main__":
-    generar_rankings_duales()
+    generar_hub_tecnico()
