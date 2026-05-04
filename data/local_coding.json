@@ -1,0 +1,20 @@
+[
+    {
+        "modelo": "DeepSeek Coder V2",
+        "proveedor": "DeepSeek",
+        "score": 1255,
+        "estado": "Soberano"
+    },
+    {
+        "modelo": "Mistral Large 2",
+        "proveedor": "Mistral",
+        "score": 1220,
+        "estado": "Soberano"
+    },
+    {
+        "modelo": "Gemma 2 27B",
+        "proveedor": "Google",
+        "score": 1180,
+        "estado": "Soberano"
+    }
+]

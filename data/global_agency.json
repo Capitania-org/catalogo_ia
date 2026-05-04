@@ -1,0 +1,32 @@
+[
+    {
+        "modelo": "GPT-4o",
+        "proveedor": "OpenAI",
+        "score": 1260,
+        "estado": "Auditado"
+    },
+    {
+        "modelo": "Claude 3.5 Sonnet",
+        "proveedor": "Anthropic",
+        "score": 1240,
+        "estado": "Auditado"
+    },
+    {
+        "modelo": "DeepSeek Coder V2",
+        "proveedor": "DeepSeek",
+        "score": 1150,
+        "estado": "Soberano"
+    },
+    {
+        "modelo": "Mistral Large 2",
+        "proveedor": "Mistral",
+        "score": 1120,
+        "estado": "Soberano"
+    },
+    {
+        "modelo": "Gemma 2 27B",
+        "proveedor": "Google",
+        "score": 1050,
+        "estado": "Soberano"
+    }
+]
