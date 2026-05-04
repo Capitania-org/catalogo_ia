@@ -26,13 +26,8 @@ def es_modelo_local(ia):
     return any(key in modelo for key in keywords_local) or "deepseek" in proveedor or "mistral" in proveedor
 
 def obtener_datos_maestros():
-    """
-    Simula la extracción de múltiples dimensiones. 
-    En la versión final, aquí conectamos cada dimensión a su respectivo benchmark.
-    """
     print("🌐 Extrayendo datos multidimensionales...")
-    # Dataset maestro simulado basado en tendencias reales de LMSYS/LiveCodeBench
-    # Formato: { "modelo": ..., "proveedor": ..., "scores": {"coding": X, "reasoning": Y, ...} }
+    # Dataset maestro simulado basado en tendencias reales
     datos_maestros = [
         {"modelo": "Claude 3.5 Sonnet", "proveedor": "Anthropic", "scores": {"coding": 1285, "reasoning": 1270, "multimodal": 1260, "agency": 1240}},
         {"modelo": "GPT-4o", "proveedor": "OpenAI", "scores": {"coding": 1270, "reasoning": 1280, "multimodal": 1290, "agency": 1260}},
@@ -41,7 +36,6 @@ def obtener_datos_maestros():
         {"modelo": "Mistral Large 2", "proveedor": "Mistral", "scores": {"coding": 1220, "reasoning": 1230, "multimodal": 1050, "agency": 1120}},
         {"modelo": "Gemma 2 27B", "proveedor": "Google", "scores": {"coding": 1180, "reasoning": 1200, "multimodal": 1150, "agency": 1050}},
     ]
-    return datos_// la data real se procesaría aquí la misma forma que antes
     return datos_maestros
 
 def generar_hub_tecnico():
@@ -52,11 +46,9 @@ def generar_hub_tecnico():
         local_list = []
         
         for ia in datos_maestros:
-            # 1. Aplicar Blacklist
             if not filtrar_blacklist(ia):
                 continue
             
-            # Creamos el objeto para la tabla
             entrada = {
                 "modelo": ia["modelo"],
                 "proveedor": ia["proveedor"],
@@ -64,23 +56,24 @@ def generar_hub_tecnico():
                 "estado": "Auditado" if not es_modelo_local(ia) else "Soberano"
             }
             
-            # 2. Clasificar en Global o Local
             global_list.append(entrada)
             if es_modelo_local(ia):
                 local_list.append(entrada)
         
-        # Ordenar por score descendente
         global_list.sort(key=lambda x: x["score"], reverse=True)
         local_list.sort(key=lambda x: x["score"], reverse=True)
         
-        # GUARDAR ARCHIVOS DINÁMICOS
+        # Aseguramos que la carpeta data exista
+        if not os.path.exists("../data"):
+            os.makedirs("../data")
+
         with open(os.path.join("..", "data", f"global_{dim}.json"), "w", encoding="utf-8") as f:
             json.dump(global_list, f, indent=4, ensure_ascii=False)
         
         with open(os.path.join("..", "data", f"local_{dim}.json"), "w", encoding="utf-8") as f:
             json.dump(local_list, f, indent=4, ensure_ascii=False)
             
-    print(f"🚀 HUB ACTUALIZADO: {len(DIMENSIONES)} dimensiones procesadas (Global y Local).")
+    print(f"🚀 HUB ACTUALIZADO: {len(DIMENSIONES)} dimensiones procesadas.")
 
 if __name__ == "__main__":
     generar_hub_tecnico()
