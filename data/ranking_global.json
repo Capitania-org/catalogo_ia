@@ -1,0 +1,26 @@
+[
+    {
+        "modelo": "Claude 3.5 Sonnet",
+        "proveedor": "Anthropic",
+        "score_coding": 1285,
+        "estado": "Aprobado"
+    },
+    {
+        "modelo": "GPT-4o",
+        "proveedor": "OpenAI",
+        "score_coding": 1270,
+        "estado": "Aprobado"
+    },
+    {
+        "modelo": "DeepSeek Coder V2",
+        "proveedor": "DeepSeek",
+        "score_coding": 1255,
+        "estado": "Soberano"
+    },
+    {
+        "modelo": "Mistral Large 2",
+        "proveedor": "Mistral",
+        "score_coding": 1220,
+        "estado": "Soberano"
+    }
+]

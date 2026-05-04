@@ -4,13 +4,14 @@ import requests
 import pandas as pd
 import ssl
 
-# Solución para el error SSL de Mac
+# Solución SSL para Mac
 ssl._create_default_https_context = ssl._create_unverified_context
 
 # --- CONFIGURACIÓN DE CURADURÍA ---
-BLACKLIST = ["microsoft", "meta", "palantir", "azure", "facebook", "llama"]
+BLACKLIST = ["microsoft", "meta", "palantir", "azure", "facebook", "llama"] # Estos se borran totalmente
+LOCAL_PROVIDERS = ["mistral", "deepseek", "google", "meta", "alibaba", "01.ai", "mistral ai"] # Modelos que suelen tener versiones Open Weights
 
-def filtrar_ia(ia):
+def filtrar_blacklist(ia):
     proveedor = str(ia.get("proveedor", "")).lower()
     modelo = str(ia.get("modelo", "")).lower()
     for banned in BLACKLIST:
@@ -18,32 +19,23 @@ def filtrar_ia(ia):
             return False
     return True
 
-def obtener_datos_de_respaldo():
-    """
-    Dataset técnico curado (LMSYS Coding) para usar si el enlace externo falla.
-    Esto asegura que la web siempre tenga datos reales y sin hype.
-    """
-    print("📦 Cargando dataset de respaldo técnico...")
-    return [
-        {"modelo": "Claude 3.5 Sonnet", "proveedor": "Anthropic", "score_coding": 1285},
-        {"modelo": "GPT-4o", "proveedor": "OpenAI", "score_coding": 1270},
-        {"modelo": "DeepSeek Coder V2", "proveedor": "DeepSeek", "score_coding": 1255},
-        {"modelo": "Llama 3 70B", "proveedor": "Meta", "score_coding": 1210}, # Será filtrado por la blacklist
-        {"modelo": "Gemini 1.5 Pro", "proveedor": "Google", "score_coding": 1230},
-        {"modelo": "Mistral Large 2", "proveedor": "Mistral", "score_coding": 1220},
-    ]
+def es_modelo_local(ia):
+    # Lógica para determinar si el modelo es "Soberano/Local"
+    # En un entorno real, esto se cruza con una base de datos de HuggingFace
+    proveedor = str(ia.get("proveedor", "")).lower()
+    modelo = str(ia.get("modelo", "")).lower()
+    
+    # Definimos palabras clave que indican que el modelo es abierto/local
+    keywords_local = ["llama", "mistral", "deepseek", "qwen", "gemma", "phi", "mixtral"]
+    
+    if any(key in modelo for key in keywords_local) or any(prov in proveedor for prov in LOCAL_PROVIDERS):
+        return True
+    return False
 
 def obtener_datos_reales():
-    print("🌐 Intentando conectar con fuente de datos reales...")
+    print("🌐 Conectando con fuente de datos reales...")
     url_datos = "https://raw.githubusercontent.com/lucidrains/chat-arena-data/main/leaderboard.csv" 
-    
     try:
-        # Intentamos descargar el CSV
-        response = requests.get(url_datos, timeout=10)
-        if response.status_code == 404:
-            print("❌ Fuente externa no encontrada (Error 404).")
-            return None
-            
         df = pd.read_csv(url_datos)
         datos_procesados = []
         for index, row in df.iterrows():
@@ -57,27 +49,36 @@ def obtener_datos_reales():
         print(f"❌ Error de conexión: {e}")
         return None
 
-def generar_catalogo_curado():
-    # 1. Intentamos obtener datos reales
+def generar_rankings_duales():
     datos_brutos = obtener_datos_reales()
     
-    # 2. Si falló la conexión o hubo un 404, usamos el respaldo
     if datos_brutos is None:
-        print("⚠️ Activando modo de respaldo para evitar que la web quede vacía.")
-        datos_brutos = obtener_datos_de_respaldo()
+        print("⚠️ Error al obtener datos. Usando respaldo...")
+        # Datos de respaldo simplificados para el ejemplo
+        datos_brutos = [
+            {"modelo": "Claude 3.5 Sonnet", "proveedor": "Anthropic", "score_coding": 1285},
+            {"modelo": "GPT-4o", "proveedor": "OpenAI", "score_coding": 1270},
+            {"modelo": "DeepSeek Coder V2", "proveedor": "DeepSeek", "score_coding": 1255},
+            {"modelo": "Llama 3 70B", "proveedor": "Meta", "score_coding": 1210},
+            {"modelo": "Mistral Large 2", "proveedor": "Mistral", "score_coding": 1220},
+        ]
 
-    # 3. APLICAMOS TU FILTRO DE BLACKLIST
-    datos_filtrados = [ia for ia in datos_brutos if filtrar_ia(ia)]
-    
-    for ia in datos_filtrados:
-        ia["estado"] = "Aprobado"
+    # 1. RANKING GLOBAL (Todos menos la Blacklist)
+    global_list = [ia for ia in datos_brutos if filtrar_blacklist(ia)]
+    for ia in global_list: ia["estado"] = "Aprobado"
 
-    # 4. Guardamos el archivo JSON
-    ruta_archivo = os.path.join("..", "data", "ranking.json")
-    with open(ruta_archivo, "w", encoding="utf-8") as f:
-        json.dump(datos_filtrados, f, indent=4, ensure_ascii=False)
+    # 2. RANKING LOCAL (Solo los que son Open Weights y NO están en Blacklist)
+    local_list = [ia for ia in datos_brutos if filtrar_blacklist(ia) and es_modelo_local(ia)]
+    for ia in local_list: ia["estado"] = "Soberano"
+
+    # GUARDAR ARCHIVOS EN /data
+    with open(os.path.join("..", "data", "ranking_global.json"), "w", encoding="utf-8") as f:
+        json.dump(global_list, f, indent=4, ensure_ascii=False)
     
-    print(f"🚀 EXITO: Archivo actualizado con {len(datos_filtrados)} modelos curados.")
+    with open(os.path.join("..", "data", "ranking_local.json"), "w", encoding="utf-8") as f:
+        json.dump(local_list, f, indent=4, ensure_ascii=False)
+    
+    print(f"🚀 EXITO: Rankings generados. Global: {len(global_list)} | Local: {len(local_list)}")
 
 if __name__ == "__main__":
-    generar_catalogo_curado()
+    generar_rankings_duales()
