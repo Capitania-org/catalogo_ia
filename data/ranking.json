@@ -16,17 +16,5 @@
         "proveedor": "DeepSeek",
         "score_coding": 94,
         "estado": "Aprobado"
-    },
-    {
-        "modelo": "Llama 3",
-        "proveedor": "Meta",
-        "score_coding": 90,
-        "estado": "Vetado"
-    },
-    {
-        "modelo": "Copilot",
-        "proveedor": "Microsoft",
-        "score_coding": 88,
-        "estado": "Vetado"
     }
 ]
